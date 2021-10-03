@@ -1,5 +1,7 @@
+const { urlencoded } = require('express')
 const express = require('express')
 const app = express()
+const exphbs = require('express-handlebars')
 
 const users = [
   {
@@ -29,8 +31,29 @@ const users = [
   }
 ]
 
+
+app.set('view engine', 'hbs')
+app.engine('hbs', exphbs({ defaultLayout: "main", extname: '.hbs' }))
+app.use(express.urlencoded({ extended: true }))
+
 app.get('/', (req, res) => {
-  res.send('Hello world!')
+  res.render('login')
+})
+
+app.post('/', (req, res) => {
+  const email = req.body.email
+  const password = req.body.password
+
+  const loginUser = users.find((user => {
+    return user.email === email && user.password === password
+  }))
+
+  if (loginUser) {
+    res.status(200).send(`Welcome back, ${loginUser.firstName}!`)
+  } else {
+    res.render('login', { 'warning': 'eamil or password incorrect!' })
+  }
+
 })
 
 app.listen(3000, () => {
