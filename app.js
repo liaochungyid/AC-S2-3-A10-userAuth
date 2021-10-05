@@ -2,6 +2,7 @@ const { urlencoded } = require('express')
 const express = require('express')
 const app = express()
 const exphbs = require('express-handlebars')
+const cookieParser = require('cookie-parser')
 
 const users = [
   {
@@ -35,9 +36,38 @@ const users = [
 app.set('view engine', 'hbs')
 app.engine('hbs', exphbs({ defaultLayout: "main", extname: '.hbs' }))
 app.use(express.urlencoded({ extended: true }))
+app.use(cookieParser('000000'))
+
+app.get('/index', (req, res) => {
+  if (req.cookies.uuname) {
+    res.render('index', {
+      name: req.cookies.uuname,
+      message: `
+      <p>Your email: ${req.cookies.uuemail}</p><p>Your password(signed): ${req.signedCookies.uupass}</p><p>Cookies will expire within 20 seconds.</p>`
+    })
+  } else {
+    res.redirect('/')
+  }
+
+})
+
+app.post('/logout', (req, res) => {
+  res.clearCookie('uuname', { path: '/' })
+  res.clearCookie('uuemail', { path: '/' })
+  res.clearCookie('uupass', { path: '/' })
+  res.redirect('/')
+})
 
 app.get('/', (req, res) => {
-  res.render('login')
+  if (req.cookies.uuname) {
+    res.render('index', {
+      name: req.cookies.uuname,
+      message: `
+      <p>Your email: ${req.cookies.uuemail}</p><p>Your password(signed): ${req.signedCookies.uupass}</p><p>Cookies will expire within 20 seconds.</p>`
+    })
+  } else {
+    res.render('login')
+  }
 })
 
 app.post('/', (req, res) => {
@@ -49,7 +79,10 @@ app.post('/', (req, res) => {
   }))
 
   if (loginUser) {
-    res.status(200).send(`Welcome back, ${loginUser.firstName}!`)
+    res.cookie('uuname', loginUser.firstName, { path: '/', signed: false, maxAge: 20000 })
+    res.cookie('uuemail', email, { path: '/', signed: false, maxAge: 20000 })
+    res.cookie('uupass', password, { path: '/', signed: true, maxAge: 20000 })
+    res.redirect('/index')
   } else {
     res.render('login', { 'warning': 'eamil or password incorrect!' })
   }
@@ -57,5 +90,5 @@ app.post('/', (req, res) => {
 })
 
 app.listen(3000, () => {
-  console.log('server is listening on http://localhost:300')
+  console.log('server is listening on http://localhost:3000')
 })
